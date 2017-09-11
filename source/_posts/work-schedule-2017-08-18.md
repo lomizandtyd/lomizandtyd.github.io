@@ -49,6 +49,6 @@ Multi-Task Learning for Prosodic Structure Generation using BLSTM RNN with Struc
 
 衡量标准的问题，准确率、精确率、召回率以及F1等，尽管是经过实际考验的客观评价标准。但对于具体的语料库而言，它并不能真正的反映预测结果的好坏。
 
-#### 客观评价标准中存在的问题
+### 客观评价标准中存在的问题
 
 没有估计到，phrase级别的平均句错误率。
