@@ -50,6 +50,61 @@
     <header>
       
         <div class="icon"></div>
+        <time datetime="2017-09-12T08:38:06.000Z"><a href="/2017/09/12/cws-sp-ap-感知器/">2017-09-12</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2017/09/12/cws-sp-ap-感知器/">cws/sp/ap 感知器</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h1 id="CWS-SP-AP"><a href="#CWS-SP-AP" class="headerlink" title="CWS SP AP"></a>CWS SP AP</h1><p>这些是什么东西。</p>
+<p>先参考 张神的 代码 <a href="https://github.com/zhangkaixu/minitools/blob/master/cws.py" target="_blank" rel="external">我是代码链接</a>，<br>这个页面有CWS和AP(average perceptron，平均感知机)，以及听到的SP(structural perceptron，结构化感知机)，它们好像都在说同一个东西。<br>我Google了一下，发现很难搜到与CWS里代码相关的average perceptron的内容。<br>以下还是依张神的称呼，叫这个代码片中涉及到的模型为CWS。</p>
+<p>CWS，用于序列标注，看起来是和CRF、HMM类似的模型。<br>既然是序列标注用模型，那我首先从模型的输入说起。</p>
+<p>在张神的代码里，模型接受文字序列作为输入，由gen_features生成特征。<br>gen_features 包含七个特征：</p>
+<p><code>features=[&#39;1&#39;+mid,&#39;2&#39;+left1,&#39;3&#39;+right1,
+              &#39;4&#39;+left2+left1,&#39;5&#39;+left1+mid,&#39;6&#39;+mid+right1,&#39;7&#39;+right1+right2]</code></p>
+<p>显而易见，这是上下文特征窗口。<br>这七个特征，与当前字符的词结构标记（BMES）共同构成，CWS的七个key。</p>
+<p>每个key，对应这一个特征的概率 <code>p(f_j|y_i)</code> 。这么说起来，CWS反而有点像ngram模型了。</p>
+<p>对于CWS模型，还要学习另一类特征：<br>状态转移概率</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">def update(self,x,y,delta): # 更新权重</div><div class="line">    # ***</div><div class="line">        self.weights.update_weights(str(y[i])+&apos;:&apos;+str(y[i+1]),delta)</div></pre></td></tr></table></figure>
+<p>代码115行，给出了状态转移概率 <code>p(y_i+1|y_i)</code> 的初始化和更新方法。<br>张神的代码，为了方便管理，把两个概率，都按照 <code>key:value</code> 对的结构组织。</p>
+<p>整个CWS模型，即是由以上两个概率构成。</p>
+<h2 id="前向计算、解码"><a href="#前向计算、解码" class="headerlink" title="前向计算、解码"></a>前向计算、解码</h2><p>对于序列标注任务，前向计算，需要计算所有可能序列的概率。<br>解码时，再从中选择最优序列。</p>
+<p>代码中的decode函数，即是依据动态规划的方法实现了这一部分。</p>
+<h2 id="反向传播-在线更新算法"><a href="#反向传播-在线更新算法" class="headerlink" title="反向传播/在线更新算法"></a>反向传播/在线更新算法</h2><p>模型总是要训练的。<br>CWS模型由于其特性，天然可以支持在线更新算法。</p>
+<p>CWS的反向传播，即：</p>
+<p>对于给定的输入样本 x, 其样本真实边界分布为y，其模型解码输出为z。<br>如果y与z不相等，则需要对y,z涉及的特征分别进行奖励和惩罚。<br>在张神的代码中，奖励与惩罚的步长均为1。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">update_weights(x, y, delta)</div></pre></td></tr></table></figure>
+<p>也就是说，由x,y生成模型的特征输入，并对这些特征进行奖励。<br>由x,z生成另一组输入特征，对这些特征进行处罚。</p>
+<p>那实际上，只更新一个步长，并不能真的让，x输入模型时，得到y的解码结果。<br>只是向拟合靠近了一步。<br>此外，需要通过一定方式控制更新幅度。</p>
+<p>更新幅度与步长并不一致，但步长决定了更新的方向。<br>具体的幅度由penalty函数确定，比如直接更新(no_regu)，或者l1 l2正则的方法。</p>
+<p>在一次完全更新（训练集）之后，需要对历史更新进行平均。<br>张神代码里，是这么搞的。对于no_regu，每次累积时， acc += dstep * value。<br>其中dstep，是上次更新样本与当前更新的样本，中间的相差的样本数。</p>
+<p>不仅是no_regu，还有l1 l2，此处实现均有点难以理解。<br>稍后再解决。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">TODO: Why use dstep for average.</div></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer>
+      
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+
+
+  <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
         <time datetime="2017-08-31T03:13:59.000Z"><a href="/2017/08/31/读蔡澜-我决定活得很有趣/">2017-08-31</a></time>
       
       
@@ -354,7 +409,7 @@
     <aside id="sidebar" class="alignright">
   <div class="search">
   <form action="//google.com/search" method="get" accept-charset="utf-8">
-    <input type="search" name="q" results="0" placeholder="Suche">
+    <input type="search" name="q" results="0" placeholder="Search">
     <input type="hidden" name="q" value="site:lomizandtyd.github.io">
   </form>
 </div>
